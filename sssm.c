@@ -30,6 +30,7 @@ typedef struct {
 
 /* Functions used in config.h */
 static void runcmd(char *cmd);
+static void curtime(char *subexpr);
 
 /* Configuration */
 #include "config.h"
@@ -76,6 +77,26 @@ die(char *errstr, ...)
 	vfprintf(stderr, errstr, ap);
 	va_end(ap);
 	exit(1);
+}
+
+void
+curtime(char *subexpr)
+{
+	struct tm now_tm;
+	time_t now_time;
+
+	if (subexpr == NULL)
+		subexpr = "%c";
+
+	if ((now_time = time(NULL)) == -1) {
+		OUTPUTS("#time-error");
+		return;
+	}
+
+	/* TODO: might need error handling here */
+	localtime_r(&now_time, &now_tm);
+	strftime(buf, bufsize, subexpr, &now_tm);
+	OUTPUTS(buf);
 }
 
 Spec
