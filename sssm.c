@@ -169,7 +169,7 @@ strfstat(void)
 void
 usage(void)
 {
-	fputs("usage: sssm [-lw] [format]\n", stderr);
+	fputs("usage: sssm [-hlw] [format]\n", stderr);
 	exit(0);
 }
 
@@ -192,6 +192,8 @@ main(int argc, char *argv[])
 	case 'x': /* xsetroot mode */
 		mode_xsetroot = 1;
 		break;
+	case 'h':
+		usage();
 	} ARGEND;
 
 	if (argc > 1)
