@@ -169,7 +169,7 @@ strfstat(void)
 void
 usage(void)
 {
-	fputs("usage: sssm [-hlw] [format]\n", stderr);
+	fputs("usage: sssm [-hlw] [-i msec] [format]\n", stderr);
 	exit(0);
 }
 
@@ -184,8 +184,16 @@ int
 main(int argc, char *argv[])
 {
 	struct timespec delay = {0};
+	char *strp;
+	char *endp;
 
 	ARGBEGIN {
+	case 'i': /* interval */
+		strp = EARGF(usage());
+		interval = strtol(strp, &endp, 10);
+		if (endp[0] != '\0' || interval <= 0)
+			usage();
+		break;
 	case 'l': /* loop */
 		mode_loop = 1;
 		break;
