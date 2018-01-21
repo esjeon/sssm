@@ -210,10 +210,8 @@ main(int argc, char *argv[])
 		strncpy(fmt, argv[0], fmtsize);
 
 	if (mode_xsetroot) {
-		if (!(dpy = XOpenDisplay(NULL))) {
-			fprintf(stderr, "sssm: cannot open display\n");
-			return 1;
-		}
+		if (!(dpy = XOpenDisplay(NULL)))
+			die("cannot open display\n");
 	}
 
 	if (mode_loop)
