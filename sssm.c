@@ -31,10 +31,12 @@
 #include "arg.h"
 char *argv0;
 
+
 /* Macros */
 #define LEN(a)          (sizeof(a) / sizeof(a)[0])
 #define OUTPUTC(c)      *(outp++) = (c)
 #define OUTPUTS(s)      outp += strlcpy(outp, (s), outsize - (size_t)(outp - out))
+
 
 /* Structs */
 typedef struct {
@@ -49,32 +51,34 @@ typedef struct {
 	char *subexpr;
 } Spec;
 
-/* Functions used in config.h */
-static void runcmd(char *cmd);
-static void curtime(char *subexpr);
-
-/* Configuration */
-#include "config.h"
 
 /* Functions */
 static void callmethod(char head, char *subexpr);
 static void die(char *errstr, ...);
+static void method_date(char *subexpr);
+static void method_exec(char *cmd);
 static Spec parsespec(char *str);
 static void strfstat(void);
 static void usage(void);
 static void xsetroot(char *name);
 
+
 /* Globals */
 Display *dpy = NULL;
-char *outp;
+
+char buf[1024]; /* buffer allocated for modules */
+size_t bufsize = LEN(buf);
 
 char out[1024]; /* output buffer */
-char buf[1024]; /* buffer allocated for modules */
-
-/* Array lengths */
-size_t fmtsize = LEN(fmt);
+char *outp;
 size_t outsize = LEN(out);
-size_t bufsize = LEN(buf);
+
+char usedfmt[1024];
+size_t usedfmtsize = LEN(usedfmt);
+
+
+/* Configuration */
+#include "config.h"
 size_t methodslen = LEN(methods);
 
 
@@ -98,26 +102,6 @@ die(char *errstr, ...)
 	vfprintf(stderr, errstr, ap);
 	va_end(ap);
 	exit(1);
-}
-
-void
-curtime(char *subexpr)
-{
-	struct tm now_tm;
-	time_t now_time;
-
-	if (subexpr == NULL)
-		subexpr = "%c";
-
-	if ((now_time = time(NULL)) == -1) {
-		OUTPUTS("#time-error");
-		return;
-	}
-
-	/* TODO: might need error handling here */
-	localtime_r(&now_time, &now_tm);
-	strftime(buf, bufsize, subexpr, &now_tm);
-	OUTPUTS(buf);
 }
 
 Spec
@@ -146,8 +130,28 @@ parsespec(char *str) {
 	return spec;
 }
 
+ void
+method_date(char *subexpr)
+{
+	struct tm now_tm;
+	time_t now_time;
+
+	if (subexpr == NULL)
+		subexpr = "%c";
+
+	if ((now_time = time(NULL)) == -1) {
+		OUTPUTS("#time-error");
+		return;
+	}
+
+	/* TODO: might need error handling here */
+	localtime_r(&now_time, &now_tm);
+	strftime(buf, bufsize, subexpr, &now_tm);
+	OUTPUTS(buf);
+}
+
 void
-runcmd(char *cmd)
+method_exec(char *cmd)
 {
 	FILE *fp;
 	int ret;
@@ -172,7 +176,7 @@ strfstat(void)
 	char *fmtp;
 
 	outp = out;
-	for (fmtp = fmt; *fmtp; fmtp++) {
+	for (fmtp = usedfmt; *fmtp; fmtp++) {
 		if (*fmtp == '@') {
 			spec = parsespec(fmtp);
 			if (spec.subexpr)
@@ -225,10 +229,12 @@ main(int argc, char *argv[])
 		usage();
 	} ARGEND;
 
-	if (argc > 1)
+	if (argc == 0)
+		strncpy(usedfmt, fmt, usedfmtsize);
+	else if(argc == 1)
+		strncpy(usedfmt, argv[0], usedfmtsize);
+	else
 		usage();
-	if (argc == 1)
-		strncpy(fmt, argv[0], fmtsize);
 
 	if (mode_xsetroot) {
 		if (!(dpy = XOpenDisplay(NULL)))
